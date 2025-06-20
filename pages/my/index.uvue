@@ -1,0 +1,188 @@
+<template>
+	<view class="container">
+		<!-- 用户卡片 -->
+		<view class="user-card">
+			<view class="avatar-box">
+				<view class="avatar">
+					<uni-icons type="person" size="48" color="#ccc" />
+					<view class="red-dot"></view>
+				</view>
+				<view class="user-info">
+					<text class="nickname">未设置昵称</text>
+					<view class="phone-row">
+						<text class="phone">3066751113</text>
+						<uni-icons type="arrow-right" size="18" color="#bbb" />
+					</view>
+				</view>
+			</view>
+		</view>
+
+		<!-- SVIP卡片 -->
+		<view class="svip-card">
+			<text class="svip-logo">SVIP</text>
+			<view class="svip-btn">开通会员</view>
+		</view>
+
+		<!-- 菜单列表 -->
+		<view class="menu-list">
+			<view class="menu-item">
+				<uni-icons type="server" size="22" color="#222" />
+				<text class="menu-title">存储空间</text>
+				<uni-icons type="arrow-right" size="18" color="#bbb" />
+			</view>
+			<view class="menu-item">
+				<uni-icons type="gear" size="22" color="#222" />
+				<text class="menu-title">设置</text>
+				<uni-icons type="arrow-right" size="18" color="#bbb" />
+			</view>
+			<view class="menu-item">
+				<uni-icons type="chatbubble" size="22" color="#222" />
+				<text class="menu-title">联系我们</text>
+				<uni-icons type="arrow-right" size="18" color="#bbb" />
+			</view>
+		</view>
+	</view>
+</template>
+
+<script setup lang="uts">
+// 静态UI页面，无复杂逻辑
+</script>
+
+<style>
+.container {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	background: #fafafa;
+}
+.top-bar {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	padding: 10px 16px 0 16px;
+	height: 36px;
+}
+.time-remind {
+	display: flex;
+	align-items: center;
+}
+.time {
+	font-size: 18px;
+	color: #222;
+	margin-right: 8px;
+}
+.calendar {
+	font-size: 12px;
+	color: #4a90e2;
+}
+.title {
+	text-align: center;
+	font-size: 22px;
+	color: #222;
+	font-weight: bold;
+	margin: 18px 0 12px 0;
+}
+.user-card {
+	background: #fff;
+	border-radius: 18px;
+	margin: 0 16px 0 16px;
+	padding: 18px 18px 10px 18px;
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	box-shadow: 0 2px 8px rgba(74,144,226,0.04);
+}
+.avatar-box {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+}
+.avatar {
+	position: relative;
+	width: 54px;
+	height: 54px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: #f2f2f2;
+	border-radius: 50%;
+	margin-right: 14px;
+}
+.red-dot {
+	position: absolute;
+	top: 8px;
+	right: 8px;
+	width: 10px;
+	height: 10px;
+	background: #ff4d4f;
+	border-radius: 50%;
+	border: 2px solid #fff;
+}
+.user-info {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+}
+.nickname {
+	font-size: 17px;
+	color: #222;
+	font-weight: bold;
+	margin-bottom: 4px;
+}
+.phone-row {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+}
+.phone {
+	font-size: 14px;
+	color: #888;
+	margin-right: 4px;
+}
+.svip-card {
+	background: linear-gradient(90deg, #ffe9b6 0%, #ffe9b6 60%, #ffe3a0 100%);
+	border-radius: 14px;
+	margin: 12px 16px 0 16px;
+	padding: 12px 18px 12px 18px;
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+}
+.svip-logo {
+	font-size: 20px;
+	color: #e6c155;
+	font-weight: bold;
+	font-style: italic;
+	letter-spacing: 2px;
+}
+.svip-btn {
+	background: linear-gradient(90deg, #ffe3a0 0%, #ffe9b6 100%);
+	color: #bfa14a;
+	font-size: 15px;
+	font-weight: bold;
+	border-radius: 18px;
+	padding: 6px 18px;
+}
+.menu-list {
+	margin: 18px 16px 0 16px;
+	background: none;
+}
+.menu-item {
+	background: #fff;
+	border-radius: 14px;
+	margin-bottom: 14px;
+	padding: 0 18px 0 14px;
+	height: 54px;
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	box-shadow: 0 2px 8px rgba(74,144,226,0.04);
+}
+.menu-title {
+	font-size: 16px;
+	color: #222;
+	margin-left: 12px;
+	flex: 1;
+}
+</style> 

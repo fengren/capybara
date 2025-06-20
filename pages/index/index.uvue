@@ -1,0 +1,512 @@
+<template>
+	<view class="container">
+		<!-- 侧边栏抽屉 -->
+		<!-- #ifdef APP -->
+		<view v-if="showDrawer" class="drawer-mask" @click="closeDrawer"></view>
+		<!-- #endif -->
+		<!-- #ifndef APP -->
+		<view v-if="showDrawer" class="drawer-mask" @click="closeDrawer"></view>
+		<!-- #endif -->
+		<view v-if="showDrawer" class="drawer">
+			<!-- 菜单项 -->
+			<view class="drawer-menu">
+				<view class="drawer-menu-item active" @click="onDrawerMenu('all')">
+					<uni-icons type="folder" size="22" color="#888" />
+					<text class="drawer-menu-title">全部文件</text>
+					<text class="drawer-menu-count">3</text>
+				</view>
+				<view class="drawer-menu-item" @click="onDrawerMenu('text')">
+					<uni-icons type="text" size="22" color="#888" />
+					<text class="drawer-menu-title">包含文字</text>
+					<text class="drawer-menu-count">3</text>
+				</view>
+				<view class="drawer-menu-item" @click="onDrawerMenu('star')">
+					<uni-icons type="star" size="22" color="#888" />
+					<text class="drawer-menu-title">收藏</text>
+					<text class="drawer-menu-count">0</text>
+				</view>
+			</view>
+			<!-- 分组标题 -->
+			<view class="drawer-group-title">分组</view>
+			<!-- 分组列表 -->
+			<view class="drawer-group-list">
+				<view class="drawer-group-item" @click="onDrawerGroup('未分组')">
+					<view class="group-dot" style="background:#bbb"></view>
+					<text class="group-title">未分组</text>
+					<text class="group-count">1</text>
+				</view>
+				<view class="drawer-group-item" @click="onDrawerGroup('会议')">
+					<view class="group-dot" style="background:#6ba6a9"></view>
+					<text class="group-title">会议</text>
+					<text class="group-count">1</text>
+				</view>
+				<view class="drawer-group-item" @click="onDrawerGroup('课堂')">
+					<view class="group-dot" style="background:#6b7ba9"></view>
+					<text class="group-title">课堂</text>
+					<text class="group-count">1</text>
+				</view>
+				<view class="drawer-group-item" @click="onDrawerGroup('演讲')">
+					<view class="group-dot" style="background:#a9a96b"></view>
+					<text class="group-title">演讲</text>
+					<text class="group-count">0</text>
+				</view>
+				<view class="drawer-group-item">
+					<view class="group-dot" style="background:#a99b6b"></view>
+					<text class="group-title">采访</text>
+					<text class="group-count">0</text>
+				</view>
+				<view class="drawer-group-item">
+					<view class="group-dot" style="background:#a96b6b"></view>
+					<text class="group-title">灵感</text>
+					<text class="group-count">0</text>
+				</view>
+				<view class="drawer-group-item">
+					<view class="group-dot" style="background:#8a6ba9"></view>
+					<text class="group-title">日记</text>
+					<text class="group-count">0</text>
+				</view>
+			</view>
+			<!-- 底部操作 -->
+			<view class="drawer-bottom">
+				<view class="drawer-bottom-btn">
+					<uni-icons type="trash" size="22" color="#bbb" />
+					<text class="drawer-bottom-title">最近删除</text>
+				</view>
+				<view class="drawer-bottom-btn">
+					<uni-icons type="document" size="22" color="#bbb" />
+					<text class="drawer-bottom-title">示例文件</text>
+				</view>
+				<view class="drawer-bottom-btn">
+					<uni-icons type="refresh" size="22" color="#bbb" />
+					<text class="drawer-bottom-title">云同步</text>
+				</view>
+			</view>
+		</view>
+
+		<!-- 主页面内容 -->
+		<view class="main-content">
+			<!-- 顶部时间和日程提醒（占位） -->
+			<view class="top-bar">
+				<view class="top-left" @click="openDrawer">
+					<uni-icons type="bars" size="26" color="#222" />
+				</view>
+				<view class="top-actions" @click="onMore">
+					<uni-icons type="more" size="22" color="#888" />
+				</view>
+			</view>
+			<!-- 恢复顶部Tab栏 -->
+			<view class="tab-search-row">
+				<view class="tabs">
+					<view :class="['tab', currentTab==0 ? 'active' : '']" @click="switchTab(0)"><text class="tab-text" :class="currentTab==0 ? 'active' : ''">全部文件</text></view>
+					<view :class="['tab', currentTab==1 ? 'active' : '']" @click="switchTab(1)"><text class="tab-text" :class="currentTab==1 ? 'active' : ''">共享</text></view>
+				</view>
+			</view>
+			<!-- 文档列表 -->
+			<scroll-view class="document-list" scroll-y>
+				<view v-for="doc in filteredDocuments" :key="doc.id" class="document-item">
+					<!-- 左侧圆点 -->
+					<view class="dot" :class="doc.tag != '' ? 'dot-green' : 'dot-gray'"></view>
+					<!-- 文档内容 -->
+					<view class="doc-main">
+						<text class="doc-title">{{ doc.title }}</text>
+						<view class="doc-meta-row">
+							<text class="doc-time">{{ doc.timeStr }}</text>
+							<text class="doc-date">{{ doc.dateStr }}</text>
+						</view>
+					</view>
+					<!-- 标签 -->
+					<view v-if="doc.tag" class="doc-tag">
+						<text class="doc-tag-text">{{ doc.tag }}</text>
+					</view>
+					<!-- 右侧"字"图标 -->
+					<view class="doc-word-icon">
+						<text class="word-icon">字</text>
+					</view>
+				</view>
+			</scroll-view>
+			<!-- 悬浮麦克风按钮 -->
+			<view class="fab" @click="onMic">
+				<view class="mic-btn">
+					<uni-icons type="mic" size="36" color="#fff" />
+				</view>
+			</view>
+		</view>
+	</view>
+</template>
+
+<script setup lang="uts">
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+
+// 文档类型
+type Document = {
+	id: string;
+	title: string;
+	createdAt: string;
+	tag: string;
+	type: string;
+	dateStr: string;
+	timeStr: string;
+};
+
+let showDrawer = ref<boolean>(false)
+let currentTab = ref<number>(0)
+let searchKeyword = ref<string>('')
+let filterType = ref<string>('all')
+
+// 示例数据
+let documents = ref<Document[]>([
+	{
+		id: "doc001",
+		title: "新品销售策略讨论会（示例文件）",
+		createdAt: "2023-11-28 16:42",
+		tag: "示例文件",
+		type: "local",
+		dateStr: "2023年11月28日",
+		timeStr: "05:57"
+	},
+	{
+		id: "doc004",
+		title: "博弈论课堂记录（示例文件）",
+		createdAt: "2023-11-28 13:55",
+		tag: "示例文件",
+		type: "local",
+		dateStr: "2023年11月28日",
+		timeStr: "14:06"
+	},
+	{
+		id: "doc002",
+		title: "2025年06月20日 上午09_21_24",
+		createdAt: "2025-06-20 09:21",
+		tag: "",
+		type: "voice",
+		dateStr: "今天 09:21",
+		timeStr: "00:14"
+	}
+])
+
+let filteredDocuments = computed<Document[]>(() => {
+	if (searchKeyword.value == '') {
+		return documents.value
+	}
+	return documents.value.filter(doc => doc.title.indexOf(searchKeyword.value) != -1)
+})
+
+function switchTab(idx: number): void {
+	if (currentTab.value != idx) {
+		currentTab.value = idx
+	}
+}
+
+function onSearch(): void {
+	uni.showToast({ title: '搜索功能开发中', icon: 'none' })
+}
+
+function onMic(): void {
+	uni.showToast({ title: '语音功能开发中', icon: 'none' })
+}
+
+function openDrawer(): void {
+	showDrawer.value = true
+}
+function closeDrawer(): void {
+	showDrawer.value = false
+}
+
+function onDrawerMenu(type: string): void {
+	filterType.value = type
+	showDrawer.value = false
+}
+function onDrawerGroup(group: string): void {
+	filterType.value = 'group-' + group
+	showDrawer.value = false
+}
+
+function onMore(): void {
+	uni.showActionSheet({
+		itemList: ['设置', '帮助', '关于'],
+		success: function(res: ShowActionSheetSuccess) {
+			uni.showToast({ title: '你选择了：' + res.tapIndex, icon: 'none' })
+		}
+	})
+}
+</script>
+
+<style>
+.container {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	background-color: #fafafa;
+	position: relative;
+	padding-top: 22px;
+}
+.drawer-mask {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100vw;
+	height: 100vh;
+	background: rgba(0,0,0,0.18);
+	z-index: 9999;
+}
+.drawer {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 360px;
+	max-width: 90vw;
+	height: 100vh;
+	background: #fff;
+	z-index: 10000;
+	display: flex;
+	flex-direction: column;
+	box-shadow: 2px 0 12px rgba(0,0,0,0.08);
+}
+.drawer-top-bar {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	padding: 18px 18px 0 18px;
+	gap: 10px;
+}
+.drawer-menu {
+	margin-top: 18px;
+}
+.drawer-menu-item {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	padding: 0 18px 0 18px;
+	height: 44px;
+	background: #fff;
+	border-radius: 8px;
+	margin-bottom: 2px;
+}
+.drawer-menu-item.active {
+	background: #f5f5f5;
+}
+.drawer-menu-title {
+	font-size: 18px;
+	color: #222;
+	margin-left: 12px;
+	flex: 1;
+}
+.drawer-menu-count {
+	font-size: 17px;
+	color: #bbb;
+}
+.drawer-group-title {
+	margin: 18px 0 6px 18px;
+	font-size: 16px;
+	color: #bbb;
+}
+.drawer-group-list {
+	margin-bottom: 8px;
+}
+.drawer-group-item {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	padding: 0 18px 0 18px;
+	height: 38px;
+}
+.group-dot {
+	width: 10px;
+	height: 10px;
+	border-radius: 50%;
+	margin-right: 12px;
+}
+.group-title {
+	font-size: 17px;
+	color: #222;
+	flex: 1;
+}
+.group-count {
+	font-size: 17px;
+	color: #bbb;
+}
+.drawer-bottom {
+	margin-top: auto;
+	padding: 18px 0 18px 0;
+	display: flex;
+	flex-direction: row;
+	justify-content: space-around;
+	background: #fff;
+}
+.drawer-bottom-btn {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 2px;
+}
+.drawer-bottom-title {
+	font-size: 13px;
+	color: #888;
+}
+.main-content {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+}
+.top-bar {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+	padding: 4px 16px 0 16px;
+	height: 44px;
+}
+.top-left {
+	width: 36px;
+	height: 36px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+.top-actions {
+	display: flex;
+	align-items: center;
+}
+.tab-search-row {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	padding: 0 0 0 8px;
+	height: 44px;
+	border-bottom: 1px solid #eee;
+	background: #fff;
+}
+.tabs {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+}
+.tab {
+	font-size: 17px;
+	color: #888;
+	padding: 0 18px;
+	height: 44px;
+	line-height: 44px;
+	position: relative;
+}
+.tab.active {
+	color: #222;
+	font-weight: bold;
+}
+.tab.active::after {
+	content: '';
+	display: block;
+	position: absolute;
+	bottom: 0;
+	left: 20%;
+	width: 60%;
+	height: 2px;
+	background: #4a90e2;
+	border-radius: 2px;
+}
+.search-btn {
+	margin-left: auto;
+	margin-right: 12px;
+	padding: 6px;
+}
+.document-list {
+	flex: 1;
+	background: #fafafa;
+}
+.document-item {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	padding: 14px 0 14px 22px;
+	border-bottom: 1px solid #f0f0f0;
+	background: #fff;
+}
+.dot {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	margin-right: 12px;
+}
+.dot-green {
+	background: #4fc08d;
+}
+.dot-gray {
+	background: #bbb;
+}
+.doc-main {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+}
+.doc-title {
+	font-size: 15px;
+	color: #222;
+	margin-bottom: 4px;
+}
+.doc-meta-row {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	gap: 12px;
+}
+.doc-time {
+	font-size: 12px;
+	color: #888;
+}
+.doc-date {
+	font-size: 12px;
+	color: #888;
+}
+.doc-tag {
+	margin-left: 8px;
+	font-size: 12px;
+	color: #4a90e2;
+	background: #eaf6ff;
+	padding: 1px 6px;
+	border-radius: 8px;
+}
+.doc-word-icon {
+	margin-left: 8px;
+	margin-right: 16px;
+}
+.word-icon {
+	display: inline-block;
+	width: 18px;
+	height: 18px;
+	line-height: 18px;
+	text-align: center;
+	font-size: 13px;
+	color: #4a90e2;
+	background: #eaf6ff;
+	border-radius: 50%;
+}
+.fab {
+	position: fixed;
+	right: 24px;
+	bottom: 90px;
+	z-index: 10;
+}
+.mic-btn {
+	width: 60px;
+	height: 60px;
+	border-radius: 50%;
+	background: #357aff;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	box-shadow: 0 2px 8px rgba(53,122,255,0.18);
+}
+.tab-text {
+	font-size: 19px;
+	color: #888;
+}
+.tab-text.active {
+	color: #222;
+	font-weight: bold;
+}
+.doc-tag-text {
+	font-size: 14px;
+	color: #4a90e2;
+}
+</style>

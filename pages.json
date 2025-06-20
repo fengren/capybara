@@ -1,0 +1,64 @@
+{
+	"pages": [
+		{
+			"path": "pages/index/index",
+			"style": {
+				"navigationBarTitleText": "文件",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/tools/index",
+			"style": {
+				"navigationBarTitleText": "工具",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/my/index",
+			"style": {
+				"navigationBarTitleText": "我的",
+				"navigationStyle": "custom"
+			}
+		}
+	],
+	"globalStyle": {
+		"navigationBarTextStyle": "black",
+		"navigationBarTitleText": "uni-app x",
+		"navigationBarBackgroundColor": "#F8F8F8",
+		"backgroundColor": "#F8F8F8"
+	},
+	"easycom": {
+		"autoscan": true,
+		"custom": {
+			"^uni-(.*)": "@dcloudio/uni-ui/lib/uni-$1/uni-$1.vue"
+		}
+	},
+	"tabBar": {
+		"color": "#7A7E83",
+		"selectedColor": "#007AFF",
+		"borderStyle": "black",
+		"backgroundColor": "#FFFFFF",
+		"fontSize": "15px",
+		"list": [
+			{
+				"pagePath": "pages/index/index",
+				"iconPath": "static/tabbar/file_icon.png",
+				"selectedIconPath": "static/tabbar/file_icon_selected.png",
+				"text": "文件"
+			},
+			{
+				"pagePath": "pages/tools/index",
+				"iconPath": "static/tabbar/tools_icon.png",
+				"selectedIconPath": "static/tabbar/tools_icon_selected.png",
+				"text": "工具"
+			},
+			{
+				"pagePath": "pages/my/index",
+				"iconPath": "static/tabbar/my_icon.png",
+				"selectedIconPath": "static/tabbar/my_icon_selected.png",
+				"text": "我的"
+			}
+		]
+	}
+}
