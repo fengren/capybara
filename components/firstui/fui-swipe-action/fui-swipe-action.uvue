@@ -384,9 +384,11 @@
 					.select(`#${this.elId}`)
 					.boundingClientRect()
 					.exec(ret => {
-						const node = ret[0] as NodeInfo;
-						this.rightWidth = (node.width == null ? 0 : node.width) as number;
-						this.isShow = this.visible
+						if (ret.length > 0) {
+							const node = ret[0] as NodeInfo;
+							this.rightWidth = (node.width == null ? 0 : node.width) as number;
+							this.isShow = this.visible
+						}
 					})
 			},
 			// #ifdef WEB

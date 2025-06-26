@@ -2,7 +2,10 @@
   <view class="container">
     <!-- 顶部栏 -->
     <view class="header">
-      <text class="title">正在录音</text>
+      <view class="header-row">
+        <text class="header-datetime">{{ dateTime }}</text>
+        <text class="title">正在录音</text>
+      </view>
     </view>
     <!-- 时间与分组 -->
     <view class="info-row">
@@ -17,27 +20,42 @@
       <text class="sub-time">{{ time }}</text>
       <text class="sub-date">{{ todayTime }}</text>
     </view>
-    <!-- 波形区域 -->
-    <view class="waveform-area">
-      <canvas canvas-id="audioWave" id="audioWave" class="waveform-canvas"></canvas>
+    <!-- 录音文件展示 -->
+    <view v-if="filePath" class="file-path-row">
+      <text class="file-path">录音文件: {{ filePath }}</text>
     </view>
+    <!-- 内容区留空，深色背景 -->
+    <view class="content-area"></view>
     <!-- 底部操作栏 -->
     <view class="footer">
-      <text class="footer-time">{{ time }}</text>
-      <image src="/static/images/component/empty/img_news_3x.png" class="footer-icon" />
-      <button class="footer-btn" @tap="toggleRecording">
-        <text v-if="recording">暂停</text>
-        <text v-else>开始</text>
-      </button>
-      <button class="footer-btn stop" @tap="stopRecording">
-        <view class="stop-inner"></view>
-      </button>
+      <view class="footer-left">
+        <text class="footer-time">{{ time }}</text>
+        <image src="/static/images/component/empty/img_news_3x.png" class="footer-icon" />
+      </view>
+      <view class="footer-center">
+        <!-- 未开始录音时显示开始按钮 -->
+        <button v-if="!recording" class="footer-btn start" @tap="toggleRecording">
+          <image v-if="iconExists" src="/static/images/component/icon_record_white.png" class="footer-btn-icon" />
+          <text v-else class="footer-btn-text">开始</text>
+        </button>
+        <button v-if="recording" class="footer-btn pause-resume" @tap="togglePauseResume">
+          <image v-if="!paused" src="/static/images/component/icon_pause_white.png" class="footer-btn-icon" />
+          <image v-else src="/static/images/component/icon_play_white.png" class="footer-btn-icon" />
+        </button>
+      </view>
+      <view class="footer-right">
+        <!-- 录音中才显示停止按钮 -->
+        <button v-if="recording" class="footer-btn stop" @tap="stopRecording">
+          <view class="stop-inner"></view>
+        </button>
+      </view>
     </view>
   </view>
 </template>
 
 <script lang="uts">
-import { onReady, getCurrentInstance } from 'vue'
+import { getCurrentInstance } from 'vue'
+import fs from 'fs'
 
 declare function uni_createCanvasContext(canvasId: string): any
 
@@ -48,205 +66,251 @@ export default {
       todayTime: '',
       time: '00:00',
       recording: false,
+      paused: false,
       groupName: '未分组',
       timer: null as number | null,
-      waveTimer: null as number | null,
-      waveData: [] as Array<number>,
       recorderManager: null as RecorderManager | null,
-      canvasContext: null as any,
-      renderingContext: null as CanvasRenderingContext2D | null,
-      canvas: null as any,
+      filePath: '',
+      canvas: null,
       canvasWidth: 0,
       canvasHeight: 0,
       testToBlobResult: false,
       testToDataURLResult: false,
-      testCanvasContext: false
+      testCanvasContext: false,
+      timeCount: 0,
+      iconExists: true,
+      fileBaseName: '',
+      fileList: [] as string[]
     }
   },
   methods: {
-    genWaveData() {
-      this.waveData = []
-      for (let i = 0; i < 60; i++) {
-        this.waveData.push(Math.floor(Math.random() * 80) + 20)
-      }
-    },
-    drawWave() {
-      const ctx = this.renderingContext
-      if (ctx != null) {
-        ctx.clearRect(0, 0, this.canvasWidth, this.canvasHeight)
-        ctx.setFillStyle('#111')
-        const barWidth = 10
-        const gap = 3
-        for (let i = 0; i < this.waveData.length; i++) {
-          const x = 600 + i * (barWidth + gap)
-          const y = this.canvasHeight - this.waveData[i]
-          ctx.beginPath()
-          ctx.rect(x, y, barWidth, this.waveData[i])
-          ctx.fill()
-        }
-        ctx.draw()
-      }
-    },
     toggleRecording() {
-      if (this.recording) {
-        this.stopRecording()
-      } else {
+      if (!this.recording) {
         this.startRecording()
       }
     },
     startRecording() {
-      const now = new Date()
-      this.dateTime = `${now.getFullYear()}年${(now.getMonth() + 1).toString().padStart(2, '0')}月${now.getDate().toString().padStart(2, '0')}日 下午${now.getHours()}_${now.getMinutes().toString().padStart(2, '0')}_${now.getSeconds().toString().padStart(2, '0')}`
-      this.todayTime = `今天 ${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`
+      this.filePath = ''
       this.time = '00:00'
       this.recording = true
-      let seconds = 0
-      this.timer = setInterval(() => {
-        seconds++
-        const min = Math.floor(seconds / 60)
-        const sec = seconds % 60
-        this.time = `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`
-      }, 1000)
-      this.waveTimer = setInterval(() => {
-        this.genWaveData()
-        this.drawWave()
-      }, 100)
-      const mgr = this.recorderManager
-      if (mgr != null) {
-        mgr.start({
-          duration: 60000,
-          sampleRate: 16000,
-          numberOfChannels: 1,
-          encodeBitRate: 96000,
-          format: 'mp3'
-        })
+      this.paused = false
+      if (this.timer == null) {
+        this.timer = setInterval(() => {
+          this.updateTime()
+        }, 1000)
+      }
+      this.timeCount = 0
+      this.recorderManager = uni.getRecorderManager()
+      this.recorderManager!.onStart(() => {
+        console.log('录音开始')
+      })
+      this.recorderManager!.onPause((res: any) => {
+        this.paused = true
+        uni.showToast({ title: '已暂停', icon: 'none' })
+        if (this.timer != null) {
+          clearInterval(this.timer as number)
+          this.timer = null
+        }
+        console.log('录音暂停', res)
+      })
+      this.recorderManager!.onResume((res: any) => {
+        this.paused = false
+        uni.showToast({ title: '继续录音', icon: 'none' })
+        if (this.timer == null) {
+          this.timer = setInterval(() => {
+            this.updateTime()
+          }, 1000)
+        }
+        console.log('录音恢复', res)
+      })
+      this.recorderManager!.onStop((res) => {
+        console.log('录音回调参数', res)
+        const tempPath = res.tempFilePath ?? ''
+        const newFileName = `${this.fileBaseName}.wav`
+        // #ifdef APP
+        const fsManager = uni.getFileSystemManager()
+        const newFilePath = `${uni.env.USER_DATA_PATH}${newFileName}`
+        try {
+          fsManager.renameSync(tempPath, newFilePath)
+          this.filePath = newFilePath
+          uni.showToast({ title: '录音完成' + newFileName, icon: 'none' })
+        } catch (err) {
+          this.filePath = tempPath
+          uni.showToast({ title: '保存失败', icon: 'none' })
+        }
+        // #endif
+        // #ifndef APP
+        this.filePath = tempPath
+        uni.showToast({ title: '录音完成', icon: 'none' })
+        // #endif
+        this.recording = false
+        this.paused = false
+        if (this.timer != null) {
+          clearInterval(this.timer as number)
+          this.timer = null
+        }
+        this.time = '00:00'
+      })
+      this.recorderManager!.onError((err: any) => {
+        uni.showToast({ title: '录音错误', icon: 'none' })
+        console.log('录音错误', err)
+      })
+      this.recorderManager!.start({
+        format: 'wav',
+        duration: 60000,
+        sampleRate: 16000,
+        numberOfChannels: 1,
+        encodeBitRate: 96000
+      })
+      uni.showToast({ title: '开始录音', icon: 'none' })
+    },
+    pauseRecording() {
+      if (this.recording && !this.paused) {
+        this.recorderManager!.pause()
+        if (this.timer != null) {
+          clearInterval(this.timer as number)
+          this.timer = null
+        }
+      }
+    },
+    resumeRecording() {
+      if (this.recording && this.paused) {
+        this.recorderManager!.resume()
+        if (this.timer == null) {
+          this.timer = setInterval(() => {
+            this.updateTime()
+          }, 1000)
+        }
       }
     },
     stopRecording() {
-      this.recording = false
-      const t = this.timer
-      if (t != null) clearInterval(t)
-      this.timer = null
-      const w = this.waveTimer
-      if (w != null) clearInterval(w)
-      this.waveTimer = null
-      const mgr = this.recorderManager
-      if (mgr != null) {
-        mgr.stop()
+      if (this.recording) {
+        this.recorderManager!.stop()
+        if (this.timer != null) {
+          clearInterval(this.timer as number)
+          this.timer = null
+        }
+        this.time = '00:00'
+        this.recording = false
       }
+    },
+    updateTime() {
+      if (!this.recording || this.paused) return
+      if (typeof this.timeCount !== 'number') {
+        this.timeCount = 0
+      }
+      this.timeCount++
+      const min = Math.floor(this.timeCount / 60)
+      const sec = this.timeCount % 60
+      const pad = (n: number) => n < 10 ? '0' + n : n + ''
+      this.time = `${pad(min)}:${pad(sec)}`
     },
     onChildReady() {
       // 预留事件处理
+    },
+    togglePauseResume() {
+      if (!this.recording) return
+      if (this.paused) {
+        this.resumeRecording()
+      } else {
+        this.pauseRecording()
+      }
     }
   },
   onLoad() {
-    this.genWaveData()
-    // 官方推荐canvas异步初始化
-    uni.createCanvasContextAsync({
-      id: 'audioWave',
-      component: this,
-      success: (context: any) => {
-        this.canvasContext = context;
-        this.renderingContext = context; // UTS下直接用context即可
-        // 不能直接获取canvas对象，宽高用属性传递
-        // 可选：如需高清屏适配，可在canvas标签上设置width/height为dpr倍数
-        // #ifdef WEB
-        if (context.toBlob) {
-          context.toBlob((blob: Blob) => {
-            this.testToBlobResult = (blob.size > 0 && blob.type == 'image/jpeg')
-          }, 'image/jpeg', 0.95)
-        }
-        // #endif
-        // #ifdef APP || WEB || MP
-        setTimeout(() => {
-          if (this.canvasContext && this.canvasContext.toDataURL) {
-            this.testToDataURLResult = this.canvasContext.toDataURL().startsWith('data:image/png;base64')
-          }
-        }, 50)
-        // #endif
-        this.testCanvasContext = true
-      }
-    })
-    this.recorderManager = uni.getRecorderManager()
-    const mgr = this.recorderManager
-    if (mgr != null) {
-      mgr.onStart((e: any) => {
-        console.log('录音开始')
-      })
-      mgr.onStop((res: any) => {
-        console.log('录音停止', res)
-      })
+    // 生成当前时间字符串，格式如 2025年06月26日 下午22_21_55
+    const now = new Date()
+    const pad = (n: number) => n < 10 ? '0' + n : n + ''
+    const year = now.getFullYear()
+    const month = pad(now.getMonth() + 1)
+    const day = pad(now.getDate())
+    const hour = pad(now.getHours())
+    const minute = pad(now.getMinutes())
+    const second = pad(now.getSeconds())
+    let period = ''
+    let hour12 = now.getHours()
+    if (hour12 < 12) {
+      period = '上午'
+    } else {
+      period = '下午'
     }
+    const timeStr = `${year}年${month}月${day}日 ${period}${hour}_${minute}_${second}`
+    this.dateTime = timeStr
+    this.fileBaseName = `${year}${month}${day}_${hour}${minute}${second}`
     uni.$on('canvasChildReady', this.onChildReady)
   },
   onUnload() {
     const t = this.timer
-    if (t != null) clearInterval(t)
+    if (t != null) clearInterval(t as number)
     this.timer = null
-    const w = this.waveTimer
-    if (w != null) clearInterval(w)
-    this.waveTimer = null
   },
   onReady() {
-    onReady(() => {
-      // 获取canvas元素
-      const canvas = uni.getElementById("audioWave") as UniCanvasElement
-      if (canvas != null) {
-        const context = canvas.getContext("2d")!
-        // 处理高清屏
-        const dpr = uni.getDeviceInfo().devicePixelRatio ?? 1
-        canvas.width = canvas.offsetWidth * dpr
-        canvas.height = canvas.offsetHeight * dpr
-        context.scale(dpr, dpr) // 仅需调用一次
-
-        // 你的绘制代码
-        // context.clearRect(0, 0, canvas.width, canvas.height)
-        // context.setFillStyle('#111')
-        // context.fillRect(...)
-        // context.draw()
-      }
-    })
+    // onReady(() => {
+    //   // 获取canvas元素
+    //   const canvas = uni.getElementById("audioWave")
+    //   if (canvas != null) {
+    //     const context = (canvas as any).getContext("2d")
+    //     // 处理高清屏
+    //     const dpr = uni.getDeviceInfo().devicePixelRatio ?? 1
+    //     canvas.width = canvas.offsetWidth * dpr
+    //     canvas.height = canvas.offsetHeight * dpr
+    //     context.scale(dpr, dpr) // 仅需调用一次
+    //     // 你的绘制代码
+    //   }
+    // })
   }
 }
 </script>
 
 <style scoped>
 .container {
-  background: #fff;
+  background: #232326;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
 .header {
+  padding: 24px 0 12px 0;
   text-align: center;
-  font-size: 20px;
-  font-weight: bold;
-  padding: 16px 0 8px 0;
+}
+.header-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+}
+.header-datetime {
+  color: #fff;
+  font-size: 16px;
+  margin-right: 16px;
 }
 .title {
-  color: #222;
+  color: #fff;
+  font-size: 22px;
+  font-weight: bold;
 }
 .info-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 0 24px;
-  font-size: 18px;
   margin-bottom: 4px;
 }
 .datetime {
-  color: #333;
+  color: #fff;
+  font-size: 20px;
+  font-weight: 500;
 }
 .group-select {
   display: flex;
   align-items: center;
-  background: #f5f5f5;
+  background: #39393d;
   border-radius: 16px;
-  padding: 2px 12px;
+  padding: 2px 16px;
 }
 .group-text {
-  color: #888;
-  font-size: 14px;
+  color: #ccc;
+  font-size: 15px;
 }
 .dropdown-icon {
   width: 16px;
@@ -257,66 +321,89 @@ export default {
   display: flex;
   align-items: center;
   padding: 0 24px;
-  color: #bbb;
-  font-size: 14px;
   margin-bottom: 8px;
 }
-.sub-time {
+.sub-time, .sub-date {
+  color: #bbb;
+  font-size: 15px;
   margin-right: 12px;
 }
-.waveform-area {
-  flex: 1;
-  display: flex;
-  align-items: flex-end;
-  justify-content: flex-end;
-  padding: 0 0 0 0;
-  min-height: 200px;
+.file-path-row {
+  padding: 0 24px 8px 24px;
 }
-.waveform-canvas {
-  width: 768px;
-  height: 200px;
-  background: #fff;
+.file-path {
+  color: #2979ff;
+  font-size: 14px;
+}
+.content-area {
+  flex: 1;
+  background: #232326;
 }
 .footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 24px;
-  border-top: 1px solid #f0f0f0;
-  background: #fafafa;
+  padding: 18px 24px;
+  background: #111114;
+}
+.footer-left {
+  display: flex;
+  align-items: center;
 }
 .footer-time {
-  font-size: 18px;
-  color: #222;
+  font-size: 20px;
+  color: #fff;
+  font-weight: 500;
+  margin-right: 8px;
 }
 .footer-icon {
-  width: 24px;
-  height: 24px;
-  margin: 0 16px;
+  width: 22px;
+  height: 22px;
+}
+.footer-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 .footer-btn {
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: #2979ff;
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 8px;
   border: none;
+  background: transparent;
+}
+.footer-btn.start {
+  background: #2979ff;
+}
+.footer-btn.pause-resume {
+  background: transparent;
 }
 .footer-btn-icon {
   width: 32px;
   height: 32px;
 }
 .footer-btn.stop {
-  background: #fff;
-  border: 2px solid #2979ff;
+  background: #2979ff;
+  border: none;
 }
 .stop-inner {
   width: 24px;
   height: 24px;
-  background: #2979ff;
+  background: #fff;
   border-radius: 4px;
+}
+.footer-right {
+  display: flex;
+  align-items: center;
+}
+.footer-btn-text {
+  color: #fff;
+  font-size: 18px;
+  font-weight: bold;
 }
 </style>

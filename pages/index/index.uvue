@@ -106,31 +106,21 @@
 			</view>
 			<!-- 文档列表 -->
 			<scroll-view class="document-list" scroll-y>
-				<fui-swipeaction-group ref="swipeGroup" :key="triggerSwipeCloseKey">
-					<view v-for="doc in filteredDocuments" :key="doc.id">
+				<fui-swipeaction-group>
+					<view v-for="file in fileList" :key="file.name">
 						<fui-swipe-action
 							:buttons="[
 								{ text: '重命名', background: '#4a90e2', color: '#fff' },
 								{ text: '删除', background: '#FF2B2B', color: '#fff' }
 							]"
-							@click="onSwipeAction"
+							@click="(event: any) => onSwipeAction(file, event)"
 						>
-							<view class="document-item" @click="onOpenDoc(doc)">
-								<!-- 左侧圆点 -->
-								<view class="dot" :class="doc.tag != '' ? 'dot-green' : 'dot-gray'"></view>
-								<!-- 文档内容 -->
-								<view class="doc-main">
-									<text class="doc-title">{{ doc.title }}</text>
-									<view class="doc-meta-row">
-										<text class="doc-time">{{ doc.timeStr }}</text>
-										<text class="doc-date">{{ doc.dateStr }}</text>
+							<view class="document-item file-row-wide">
+								<view class="file-row-main">
+									<text class="doc-title">{{ file.name }}</text>
+									<view class="file-row-sub">
+										<text class="doc-duration">{{ file.duration }}</text>
 									</view>
-								</view>
-								<!-- 标签 -->
-								<view v-if="doc.tag" class="doc-tag"><text class="doc-tag-text">{{ doc.tag }}</text></view>
-								<!-- 右侧"字"图标 -->
-								<view class="doc-word-icon">
-									<text class="word-icon">字</text>
 								</view>
 							</view>
 						</fui-swipe-action>
@@ -148,7 +138,7 @@
 </template>
 
 <script setup lang="uts">
-import { ref, computed, onMounted, onUnmounted, getCurrentInstance } from 'vue'
+import { ref, computed, onMounted, onUnmounted, getCurrentInstance, Ref } from 'vue'
 
 // 文档类型
 type Document = {
@@ -161,6 +151,11 @@ type Document = {
 	timeStr: string;
 };
 
+type AudioFile = {
+	name: string;
+	duration: string;
+} 
+
 let showDrawer = ref<boolean>(false)
 let currentTab = ref<number>(0)
 let searchKeyword = ref<string>('')
@@ -170,6 +165,7 @@ let recorderManager: any = null
 let swipeGroup = ref<any>({})
 let triggerSwipeClose = ref<boolean>(false)
 const triggerSwipeCloseKey = computed<string>(() => triggerSwipeClose.value ? 'reset' : 'normal')
+let fileList = ref([] as AudioFile[])
 
 // 示例数据
 let documents = ref<Document[]>([
@@ -220,22 +216,35 @@ function onSearch(): void {
 }
 
 onMounted(() => {
-	let filesRaw = uni.getStorageSync('recordFiles')
-	let files: Document[] = []
-	if (filesRaw != null) {
-		if (typeof filesRaw == 'string') {
-			try {
-				files = JSON.parse<Document[]>(filesRaw) ?? []
-			} catch (e) {
-				files = []
-			}
-		} else {
-			files = filesRaw as Document[]
-		}
+	// #ifdef APP
+	const fsManager = uni.getFileSystemManager()
+	try {
+		const files = fsManager.readdirSync(uni.env.USER_DATA_PATH) ?? []
+		fileList.value = []
+		files.forEach(file => {
+			const filePath = `${uni.env.USER_DATA_PATH}/${file}`
+			uni.getVideoInfo({
+				src: filePath,
+				success: (res) => {
+					let d = 0
+					if (res.duration != null) d = res.duration
+					const sec = Math.floor(d % 60)
+					const min = Math.floor(d / 60)
+					const pad = (n: number) => n < 10 ? '0' + n : n + ''
+					const duration = `${pad(min)}:${pad(sec)}`
+					const audioFile: AudioFile = { name: file, duration }
+					fileList.value.push(audioFile)
+				},
+				fail: () => {
+					const audioFile: AudioFile = { name: file, duration: '--:--' }
+					fileList.value.push(audioFile)
+				}
+			})
+		})
+	} catch (err) {
+		fileList.value = []
 	}
-	if (files.length > 0) {
-		documents.value = [...files, ...documents.value.filter(d => d.type != 'voice' || files.find(f => f.id == d.id) == null)]
-	}
+	// #endif
 })
 
 function onMic(): void {
@@ -267,27 +276,9 @@ function onMore(): void {
 	})
 }
 
-function onSwipeAction(event: any, doc: Document): void {
-	// if (event['index'] == 0) {
-	// 	// 重命名
-	// 	uni.showModal({
-	// 		title: '重命名',
-	// 		editable: true,
-	// 		placeholderText: '请输入新名称',
-	// 		content: doc.title,
-	// 		success: function(res) {
-	// 			if (res.confirm === true && res.content != null && res.content != '' && res.content != doc.title) {
-	// 				doc.title = res.content!
-	// 			}
-	// 		}
-	// 	})
-	// } else if (event['index'] == 1) {
-	// 	// 删除
-	// 	const idx = documents.value.findIndex(d => d.id == doc.id)
-	// 	if (idx != -1) {
-	// 		documents.value.splice(idx, 1)
-	// 	}
-	// }
+function onSwipeAction(file: AudioFile, event: any): void {
+	// event.index: 0为重命名，1为删除
+	// file.name 可用于定位文件
 }
 
 function onOpenDoc(doc: Document): void {
@@ -482,14 +473,51 @@ function onMainContentTap(): void {
 .document-list {
 	flex: 1;
 	background: #fafafa;
+	max-width: 98vw;
+	min-width: 340px;
 }
-.document-item {
+.document-item.file-row-wide {
+	display: flex;
+	flex-direction: row;
+	align-items: flex-start;
+	padding: 18px 18px 18px 28px;
+	border-bottom: 1px solid #f0f0f0;
+	background: #fff;
+	min-width: 340px;
+	max-width: 98vw;
+}
+.file-row-main {
+	flex: 1;
+	width: 100%;
+}
+.file-row-sub {
 	display: flex;
 	flex-direction: row;
 	align-items: center;
-	padding: 14px 0 14px 22px;
-	border-bottom: 1px solid #f0f0f0;
-	background: #fff;
+	justify-content: space-between;
+	margin-top: 4px;
+}
+.doc-title {
+	font-size: 15px;
+	color: #222;
+	margin-bottom: 4px;
+	flex: 1;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.doc-duration {
+	font-size: 12px;
+	color: #888;
+	margin-left: 0;
+	min-width: 40px;
+	text-align: left;
+}
+.doc-ctime {
+	font-size: 12px;
+	color: #888;
+	margin-left: 12px;
+	text-align: right;
 }
 .dot {
 	width: 8px;
@@ -507,25 +535,6 @@ function onMainContentTap(): void {
 	flex: 1;
 	display: flex;
 	flex-direction: column;
-}
-.doc-title {
-	font-size: 15px;
-	color: #222;
-	margin-bottom: 4px;
-}
-.doc-meta-row {
-	display: flex;
-	flex-direction: row;
-	align-items: center;
-	gap: 12px;
-}
-.doc-time {
-	font-size: 12px;
-	color: #888;
-}
-.doc-date {
-	font-size: 12px;
-	color: #888;
 }
 .doc-tag {
 	margin-left: 8px;
