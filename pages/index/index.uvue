@@ -1,97 +1,100 @@
 <template>
 	<view class="container">
-		<!-- 侧边栏抽屉 -->
-		<!-- #ifdef APP -->
-		<view v-if="showDrawer" class="drawer-mask" @click="closeDrawer"></view>
-		<!-- #endif -->
-		<!-- #ifndef APP -->
-		<view v-if="showDrawer" class="drawer-mask" @click="closeDrawer"></view>
-		<!-- #endif -->
-		<view v-if="showDrawer" class="drawer">
-			<!-- 菜单项 -->
-			<view class="drawer-menu">
-				<view class="drawer-menu-item active" @click="onDrawerMenu('all')">
-					<uni-icons type="folder" size="22" color="#888" />
-					<text class="drawer-menu-title">全部文件</text>
-					<text class="drawer-menu-count">3</text>
+		<!-- fui-drawer 替换原有抽屉 -->
+		<fui-drawer
+			:visible="showDrawer"
+			direction="left"
+			@close="closeDrawer"
+			background="#fff"
+			:maskClosable="true"
+			:zIndex="10000"
+		>
+			<view class="drawer-content" style="width:75vw;max-width:75vw;height:100vh;">
+				<!-- 菜单项 -->
+				<view class="drawer-menu">
+					<view class="drawer-menu-item active" @click="onDrawerMenu('all')">
+						<fui-icon name="folder" size="22" color="#888" />
+						<text class="drawer-menu-title">全部文件</text>
+						<text class="drawer-menu-count">3</text>
+					</view>
+					<view class="drawer-menu-item" @click="onDrawerMenu('text')">
+						<fui-icon name="text" size="22" color="#888" />
+						<text class="drawer-menu-title">包含文字</text>
+						<text class="drawer-menu-count">3</text>
+					</view>
+					<view class="drawer-menu-item" @click="onDrawerMenu('star')">
+						<fui-icon name="star" size="22" color="#888" />
+						<text class="drawer-menu-title">收藏</text>
+						<text class="drawer-menu-count">0</text>
+					</view>
 				</view>
-				<view class="drawer-menu-item" @click="onDrawerMenu('text')">
-					<uni-icons type="text" size="22" color="#888" />
-					<text class="drawer-menu-title">包含文字</text>
-					<text class="drawer-menu-count">3</text>
+				<!-- 分组标题 -->
+				<view class="drawer-group-title"><text class="drawer-group-title-text">分组</text></view>
+				<!-- 分组列表 -->
+				<view class="drawer-group-list">
+					<view class="drawer-group-item" @click="onDrawerGroup('未分组')">
+						<view class="group-dot" style="background:#bbb"></view>
+						<text class="group-title">未分组</text>
+						<text class="group-count">1</text>
+					</view>
+					<view class="drawer-group-item" @click="onDrawerGroup('会议')">
+						<view class="group-dot" style="background:#6ba6a9"></view>
+						<text class="group-title">会议</text>
+						<text class="group-count">1</text>
+					</view>
+					<view class="drawer-group-item" @click="onDrawerGroup('课堂')">
+						<view class="group-dot" style="background:#6b7ba9"></view>
+						<text class="group-title">课堂</text>
+						<text class="group-count">1</text>
+					</view>
+					<view class="drawer-group-item" @click="onDrawerGroup('演讲')">
+						<view class="group-dot" style="background:#a9a96b"></view>
+						<text class="group-title">演讲</text>
+						<text class="group-count">0</text>
+					</view>
+					<view class="drawer-group-item">
+						<view class="group-dot" style="background:#a99b6b"></view>
+						<text class="group-title">采访</text>
+						<text class="group-count">0</text>
+					</view>
+					<view class="drawer-group-item">
+						<view class="group-dot" style="background:#a96b6b"></view>
+						<text class="group-title">灵感</text>
+						<text class="group-count">0</text>
+					</view>
+					<view class="drawer-group-item">
+						<view class="group-dot" style="background:#8a6ba9"></view>
+						<text class="group-title">日记</text>
+						<text class="group-count">0</text>
+					</view>
 				</view>
-				<view class="drawer-menu-item" @click="onDrawerMenu('star')">
-					<uni-icons type="star" size="22" color="#888" />
-					<text class="drawer-menu-title">收藏</text>
-					<text class="drawer-menu-count">0</text>
+				<!-- 底部操作 -->
+				<view class="drawer-bottom">
+					<view class="drawer-bottom-btn">
+						<fui-icon name="trash" size="22" color="#bbb" />
+						<text class="drawer-bottom-title">最近删除</text>
+					</view>
+					<view class="drawer-bottom-btn">
+						<fui-icon name="document" size="22" color="#bbb" />
+						<text class="drawer-bottom-title">示例文件</text>
+					</view>
+					<view class="drawer-bottom-btn">
+						<fui-icon name="refresh" size="22" color="#bbb" />
+						<text class="drawer-bottom-title">云同步</text>
+					</view>
 				</view>
 			</view>
-			<!-- 分组标题 -->
-			<view class="drawer-group-title">分组</view>
-			<!-- 分组列表 -->
-			<view class="drawer-group-list">
-				<view class="drawer-group-item" @click="onDrawerGroup('未分组')">
-					<view class="group-dot" style="background:#bbb"></view>
-					<text class="group-title">未分组</text>
-					<text class="group-count">1</text>
-				</view>
-				<view class="drawer-group-item" @click="onDrawerGroup('会议')">
-					<view class="group-dot" style="background:#6ba6a9"></view>
-					<text class="group-title">会议</text>
-					<text class="group-count">1</text>
-				</view>
-				<view class="drawer-group-item" @click="onDrawerGroup('课堂')">
-					<view class="group-dot" style="background:#6b7ba9"></view>
-					<text class="group-title">课堂</text>
-					<text class="group-count">1</text>
-				</view>
-				<view class="drawer-group-item" @click="onDrawerGroup('演讲')">
-					<view class="group-dot" style="background:#a9a96b"></view>
-					<text class="group-title">演讲</text>
-					<text class="group-count">0</text>
-				</view>
-				<view class="drawer-group-item">
-					<view class="group-dot" style="background:#a99b6b"></view>
-					<text class="group-title">采访</text>
-					<text class="group-count">0</text>
-				</view>
-				<view class="drawer-group-item">
-					<view class="group-dot" style="background:#a96b6b"></view>
-					<text class="group-title">灵感</text>
-					<text class="group-count">0</text>
-				</view>
-				<view class="drawer-group-item">
-					<view class="group-dot" style="background:#8a6ba9"></view>
-					<text class="group-title">日记</text>
-					<text class="group-count">0</text>
-				</view>
-			</view>
-			<!-- 底部操作 -->
-			<view class="drawer-bottom">
-				<view class="drawer-bottom-btn">
-					<uni-icons type="trash" size="22" color="#bbb" />
-					<text class="drawer-bottom-title">最近删除</text>
-				</view>
-				<view class="drawer-bottom-btn">
-					<uni-icons type="document" size="22" color="#bbb" />
-					<text class="drawer-bottom-title">示例文件</text>
-				</view>
-				<view class="drawer-bottom-btn">
-					<uni-icons type="refresh" size="22" color="#bbb" />
-					<text class="drawer-bottom-title">云同步</text>
-				</view>
-			</view>
-		</view>
+		</fui-drawer>
 
 		<!-- 主页面内容 -->
 		<view class="main-content">
 			<!-- 顶部时间和日程提醒（占位） -->
 			<view class="top-bar">
 				<view class="top-left" @click="openDrawer">
-					<uni-icons type="bars" size="26" color="#222" />
+					<fui-icon name="bars" size="26" color="#222" />
 				</view>
 				<view class="top-actions" @click="onMore">
-					<uni-icons type="more" size="22" color="#888" />
+					<fui-icon name="more" size="22" color="#888" />
 				</view>
 			</view>
 			<!-- 恢复顶部Tab栏 -->
@@ -103,31 +106,41 @@
 			</view>
 			<!-- 文档列表 -->
 			<scroll-view class="document-list" scroll-y>
-				<view v-for="doc in filteredDocuments" :key="doc.id" class="document-item">
-					<!-- 左侧圆点 -->
-					<view class="dot" :class="doc.tag != '' ? 'dot-green' : 'dot-gray'"></view>
-					<!-- 文档内容 -->
-					<view class="doc-main">
-						<text class="doc-title">{{ doc.title }}</text>
-						<view class="doc-meta-row">
-							<text class="doc-time">{{ doc.timeStr }}</text>
-							<text class="doc-date">{{ doc.dateStr }}</text>
-						</view>
+				<fui-swipeaction-group>
+					<view v-for="doc in filteredDocuments" :key="doc.id">
+						<fui-swipe-action
+							:buttons="[
+								{ text: '重命名', background: '#4a90e2', color: '#fff' },
+								{ text: '删除', background: '#FF2B2B', color: '#fff' }
+							]"
+							@click="onSwipeAction"
+						>
+							<view class="document-item" @click="onOpenDoc(doc)">
+								<!-- 左侧圆点 -->
+								<view class="dot" :class="doc.tag != '' ? 'dot-green' : 'dot-gray'"></view>
+								<!-- 文档内容 -->
+								<view class="doc-main">
+									<text class="doc-title">{{ doc.title }}</text>
+									<view class="doc-meta-row">
+										<text class="doc-time">{{ doc.timeStr }}</text>
+										<text class="doc-date">{{ doc.dateStr }}</text>
+									</view>
+								</view>
+								<!-- 标签 -->
+								<view v-if="doc.tag" class="doc-tag"><text class="doc-tag-text">{{ doc.tag }}</text></view>
+								<!-- 右侧"字"图标 -->
+								<view class="doc-word-icon">
+									<text class="word-icon">字</text>
+								</view>
+							</view>
+						</fui-swipe-action>
 					</view>
-					<!-- 标签 -->
-					<view v-if="doc.tag" class="doc-tag">
-						<text class="doc-tag-text">{{ doc.tag }}</text>
-					</view>
-					<!-- 右侧"字"图标 -->
-					<view class="doc-word-icon">
-						<text class="word-icon">字</text>
-					</view>
-				</view>
+				</fui-swipeaction-group>
 			</scroll-view>
 			<!-- 悬浮麦克风按钮 -->
 			<view class="fab" @click="onMic">
-				<view class="mic-btn">
-					<uni-icons type="mic" size="36" color="#fff" />
+				<view :class="['mic-btn', isRecording ? 'mic-btn-active' : '']">
+					<fui-icon name="voice" size="36" color="#fff" />
 				</view>
 			</view>
 		</view>
@@ -152,6 +165,8 @@ let showDrawer = ref<boolean>(false)
 let currentTab = ref<number>(0)
 let searchKeyword = ref<string>('')
 let filterType = ref<string>('all')
+let isRecording = ref<boolean>(false)
+let recorderManager: any = null
 
 // 示例数据
 let documents = ref<Document[]>([
@@ -201,8 +216,27 @@ function onSearch(): void {
 	uni.showToast({ title: '搜索功能开发中', icon: 'none' })
 }
 
+onMounted(() => {
+	let filesRaw = uni.getStorageSync('recordFiles')
+	let files: Document[] = []
+	if (filesRaw != null) {
+		if (typeof filesRaw == 'string') {
+			try {
+				files = JSON.parse<Document[]>(filesRaw) ?? []
+			} catch (e) {
+				files = []
+			}
+		} else {
+			files = filesRaw as Document[]
+		}
+	}
+	if (files.length > 0) {
+		documents.value = [...files, ...documents.value.filter(d => d.type != 'voice' || files.find(f => f.id == d.id) == null)]
+	}
+})
+
 function onMic(): void {
-	uni.showToast({ title: '语音功能开发中', icon: 'none' })
+	uni.navigateTo({ url: '/pages/recorder/recorder' })
 }
 
 function openDrawer(): void {
@@ -228,6 +262,33 @@ function onMore(): void {
 			uni.showToast({ title: '你选择了：' + res.tapIndex, icon: 'none' })
 		}
 	})
+}
+
+function onSwipeAction(event: any, doc: Document): void {
+	// if (event['index'] == 0) {
+	// 	// 重命名
+	// 	uni.showModal({
+	// 		title: '重命名',
+	// 		editable: true,
+	// 		placeholderText: '请输入新名称',
+	// 		content: doc.title,
+	// 		success: function(res) {
+	// 			if (res.confirm === true && res.content != null && res.content != '' && res.content != doc.title) {
+	// 				doc.title = res.content!
+	// 			}
+	// 		}
+	// 	})
+	// } else if (event['index'] == 1) {
+	// 	// 删除
+	// 	const idx = documents.value.findIndex(d => d.id == doc.id)
+	// 	if (idx != -1) {
+	// 		documents.value.splice(idx, 1)
+	// 	}
+	// }
+}
+
+function onOpenDoc(doc: Document): void {
+	uni.navigateTo({ url: '/pages/doc/detail' })
 }
 </script>
 
@@ -496,6 +557,10 @@ function onMore(): void {
 	align-items: center;
 	justify-content: center;
 	box-shadow: 0 2px 8px rgba(53,122,255,0.18);
+	transition: background 0.2s;
+}
+.mic-btn-active {
+	background: #ff4d4f;
 }
 .tab-text {
 	font-size: 19px;
@@ -508,5 +573,14 @@ function onMore(): void {
 .doc-tag-text {
 	font-size: 14px;
 	color: #4a90e2;
+}
+.drawer-content {
+	width: 75vw;
+	max-width: 75vw;
+	height: 100vh;
+}
+.drawer-group-title-text {
+	font-size: 16px;
+	color: #bbb;
 }
 </style>

@@ -4,14 +4,14 @@
 		<view class="user-card">
 			<view class="avatar-box">
 				<view class="avatar">
-					<uni-icons type="person" size="48" color="#ccc" />
+					<fui-icon type="person" size="48" color="#ccc" />
 					<view class="red-dot"></view>
 				</view>
 				<view class="user-info">
 					<text class="nickname">未设置昵称</text>
 					<view class="phone-row">
 						<text class="phone">3066751113</text>
-						<uni-icons type="arrow-right" size="18" color="#bbb" />
+						<fui-icon type="arrow-right" size="18" color="#bbb" />
 					</view>
 				</view>
 			</view>
@@ -26,19 +26,19 @@
 		<!-- 菜单列表 -->
 		<view class="menu-list">
 			<view class="menu-item">
-				<uni-icons type="server" size="22" color="#222" />
+				<fui-icon type="server" size="22" color="#222" />
 				<text class="menu-title">存储空间</text>
-				<uni-icons type="arrow-right" size="18" color="#bbb" />
+				<fui-icon type="arrow-right" size="18" color="#bbb" />
 			</view>
 			<view class="menu-item">
-				<uni-icons type="gear" size="22" color="#222" />
+				<fui-icon type="gear" size="22" color="#222" />
 				<text class="menu-title">设置</text>
-				<uni-icons type="arrow-right" size="18" color="#bbb" />
+				<fui-icon type="arrow-right" size="18" color="#bbb" />
 			</view>
 			<view class="menu-item">
-				<uni-icons type="chatbubble" size="22" color="#222" />
+				<fui-icon type="chatbubble" size="22" color="#222" />
 				<text class="menu-title">联系我们</text>
-				<uni-icons type="arrow-right" size="18" color="#bbb" />
+				<fui-icon type="arrow-right" size="18" color="#bbb" />
 			</view>
 		</view>
 	</view>

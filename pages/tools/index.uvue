@@ -5,7 +5,7 @@
 			<!-- 录音转文字（大卡片） -->
 			<view class="card card-large card-orange">
 				<view class="card-icon">
-					<uni-icons type="mic" size="28" color="#fff" />
+					<fui-icon type="mic" size="28" color="#fff" />
 					<text class="card-icon-t">T</text>
 				</view>
 				<text class="card-title">录音转文字</text>
@@ -17,7 +17,7 @@
 				<!-- 悬浮字幕（小卡片） -->
 				<view class="card card-small card-orange-light">
 					<view class="card-icon">
-						<uni-icons type="font" size="22" color="#fff" />
+						<fui-icon type="font" size="22" color="#fff" />
 					</view>
 					<text class="card-title">悬浮字幕</text>
 					<text class="card-desc">边播边转</text>
@@ -25,7 +25,7 @@
 				<!-- 音/视频转文字（小卡片） -->
 				<view class="card card-small card-purple">
 					<view class="card-icon">
-						<uni-icons type="sound" size="22" color="#fff" />
+						<fui-icon type="sound" size="22" color="#fff" />
 					</view>
 					<text class="card-title">音/视频转文字</text>
 					<text class="card-desc">区分说话人</text>
@@ -37,20 +37,20 @@
 		<view class="card-row card-row-bottom">
 			<view class="card card-white">
 				<view class="card-icon">
-					<uni-icons type="videocam" size="22" color="#4a90e2" />
+					<fui-icon type="videocam" size="22" color="#4a90e2" />
 				</view>
 				<text class="card-title card-title-dark">视频加字幕</text>
 				<text class="card-desc card-desc-dark">自动识别</text>
 			</view>
 			<view class="card card-white">
 				<view class="card-icon">
-					<uni-icons type="waveform" size="22" color="#4a90e2" />
+					<fui-icon type="waveform" size="22" color="#4a90e2" />
 				</view>
 				<text class="card-title card-title-dark">AI降噪</text>
 			</view>
 			<view class="card card-white">
 				<view class="card-icon">
-					<uni-icons type="compose" size="22" color="#4a90e2" />
+					<fui-icon type="compose" size="22" color="#4a90e2" />
 				</view>
 				<text class="card-title card-title-dark">音频编辑</text>
 			</view>

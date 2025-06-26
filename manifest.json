@@ -6,19 +6,26 @@
 	"versionCode": "100",
 	"uni-app-x": {},
 	"app-plus": {
-	    "modules": {
-	      "uni-storage": {},
-	      "uni-getAccessibilityInfo": {},
-	      "uni-getAppAuthorizeSetting": {},
-	      "uni-getAppBaseInfo": {},
-	      "uni-getSystemSetting": {},
-	      "uni-openAppAuthorizeSetting": {},
-	      "uni-prompt": {},
-	      "uni-getDeviceInfo": {},
-	      "uni-getSystemInfo": {},
-	      "uni-rpx2px": {},
-	      "uni-theme": {},
-	      "uni-exit": {}
+		"modules": {
+			"uni-storage": {},
+			"uni-getAccessibilityInfo": {},
+			"uni-getAppAuthorizeSetting": {},
+			"uni-getAppBaseInfo": {},
+			"uni-getSystemSetting": {},
+			"uni-openAppAuthorizeSetting": {},
+			"uni-prompt": {},
+			"uni-getDeviceInfo": {},
+			"uni-getSystemInfo": {},
+			"uni-rpx2px": {},
+			"uni-theme": {},
+			"uni-exit": {}
+		},
+		"distribute": {
+			"android": {
+				"permissions": [
+					"RECORD_AUDIO"
+				]
+			}
 		}
 	},
 	/* 快应用特有相关 */

@@ -20,6 +20,12 @@
 				"navigationBarTitleText": "我的",
 				"navigationStyle": "custom"
 			}
+		},
+		{
+			"path": "pages/recorder/recorder",
+			"style": {
+				"navigationBarTitleText": "录音"
+			}
 		}
 	],
 	"globalStyle": {
@@ -31,7 +37,9 @@
 	"easycom": {
 		"autoscan": true,
 		"custom": {
-			"^uni-(.*)": "@dcloudio/uni-ui/lib/uni-$1/uni-$1.vue"
+			"^uni-(.*)": "@dcloudio/uni-ui/lib/uni-$1/uni-$1.vue",
+			"fui-(.*)": "@/components/firstui/fui-$1/fui-$1.uvue"
+
 		}
 	},
 	"tabBar": {
@@ -39,24 +47,23 @@
 		"selectedColor": "#007AFF",
 		"borderStyle": "black",
 		"backgroundColor": "#FFFFFF",
-		"fontSize": "15px",
 		"list": [
 			{
 				"pagePath": "pages/index/index",
-				"iconPath": "static/tabbar/file_icon.png",
-				"selectedIconPath": "static/tabbar/file_icon_selected.png",
+				"iconPath": "static/images/tabbar/mod_default_3x.png",
+				"selectedIconPath": "static/images/tabbar/mod_selected_3x.png",
 				"text": "文件"
 			},
 			{
 				"pagePath": "pages/tools/index",
-				"iconPath": "static/tabbar/tools_icon.png",
-				"selectedIconPath": "static/tabbar/tools_icon_selected.png",
+				"iconPath": "static/images/tabbar/assembly_default_3x.png",
+				"selectedIconPath": "static/images/tabbar/assembly_selected_3x.png",
 				"text": "工具"
 			},
 			{
 				"pagePath": "pages/my/index",
-				"iconPath": "static/tabbar/my_icon.png",
-				"selectedIconPath": "static/tabbar/my_icon_selected.png",
+				"iconPath": "static/images/tabbar/my_default_3x.png",
+				"selectedIconPath": "static/images/tabbar/my_selected_3x.png",
 				"text": "我的"
 			}
 		]

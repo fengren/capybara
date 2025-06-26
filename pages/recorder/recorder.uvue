@@ -1,0 +1,159 @@
+<template>
+	<view class="recorder-container">
+		<canvas canvas-id="waveform" class="waveform-canvas"></canvas>
+		<view class="recorder-actions">
+			<button @click="onStop" :disabled="!isRecording">停止录音</button>
+		</view>
+	</view>
+</template>
+
+<script setup lang="uts">
+import { ref, onMounted, onUnmounted } from 'vue'
+
+type RecorderManager = any // 如有官方类型可替换
+
+let isRecording = ref<boolean>(false)
+let recorderManager: RecorderManager|null = null
+let canvasContext: any = null
+let animationId: number|null = null
+let waveformData: number[] = []
+let startTime: number = 0
+let fileTitle: string = ''
+
+function getNowTimeStr(): string {
+	const now = new Date()
+	const y = now.getFullYear()
+	const m = (now.getMonth() + 1).toString().padStart(2, '0')
+	const d = now.getDate().toString().padStart(2, '0')
+	const h = now.getHours().toString().padStart(2, '0')
+	const min = now.getMinutes().toString().padStart(2, '0')
+	const s = now.getSeconds().toString().padStart(2, '0')
+	return `${y}-${m}-${d}_${h}-${min}-${s}`
+}
+
+onMounted(() => {
+	recorderManager = uni.getRecorderManager()
+	// 兼容 UTS 获取 canvas context
+	uni.createSelectorQuery()
+		.select('#waveform')
+		.context((res: any) => {
+			canvasContext = res.context
+			startDraw()
+		})
+		.exec()
+	startTime = Date.now()
+	fileTitle = `录音_${getNowTimeStr()}`
+	const manager = recorderManager
+	if (manager != null) {
+		manager.onStart(() => {
+			isRecording.value = true
+		})
+		manager.onStop((res: any) => {
+			isRecording.value = false
+			const now = new Date()
+			const recordInfo = {
+				title: fileTitle,
+				createdAt: now.toISOString().slice(0, 16).replace('T', ' '),
+				tag: '',
+				type: 'voice',
+				dateStr: `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日`,
+				timeStr: `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`,
+				filePath: res.tempFilePath,
+				id: 'rec_' + startTime
+			}
+			let files = uni.getStorageSync('recordFiles') as any[] | null
+			if (!files) files = []
+			files.unshift(recordInfo)
+			uni.setStorageSync('recordFiles', files)
+			uni.showToast({ title: '录音已保存', icon: 'none' })
+			cancelDraw()
+			setTimeout(() => {
+				uni.navigateBack()
+			}, 600)
+		})
+		// 实时音轨
+		// #ifdef APP || MP-WEIXIN
+		manager.onFrameRecorded((frame: any) => {
+			const data = new Uint8Array(frame.frameBuffer)
+			waveformData = []
+			for (let i = 0; i < data.length; i += 100) {
+				waveformData.push(data[i] / 255)
+			}
+		})
+		// #endif
+		// 开始录音
+		manager.start({
+			duration: 60000,
+			format: 'mp3',
+			frameSize: 1
+		})
+	}
+})
+
+onUnmounted(() => {
+	cancelDraw()
+	const manager = recorderManager
+	if (manager != null && isRecording.value) {
+		manager.stop()
+	}
+})
+
+function onStop() {
+	const manager = recorderManager
+	if (manager != null && isRecording.value) {
+		manager.stop()
+	}
+}
+
+function startDraw() {
+	function draw() {
+		if (!canvasContext) return
+		canvasContext.clearRect(0, 0, 600, 120)
+		canvasContext.setStrokeStyle('#357aff')
+		canvasContext.setLineWidth(2)
+		canvasContext.beginPath()
+		for (let i = 0; i < waveformData.length; i++) {
+			const x = (i / waveformData.length) * 600
+			const y = 60 - waveformData[i] * 50
+			if (i === 0) {
+				canvasContext.moveTo(x, y)
+			} else {
+				canvasContext.lineTo(x, y)
+			}
+		}
+		canvasContext.stroke()
+		canvasContext.draw()
+		animationId = requestAnimationFrame(draw)
+	}
+	draw()
+}
+
+function cancelDraw() {
+	if (animationId != null) {
+		cancelAnimationFrame(animationId)
+		animationId = null
+	}
+}
+</script>
+
+<style>
+.recorder-container {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	height: 100vh;
+	background: #fafafa;
+}
+.waveform-canvas {
+	width: 600px;
+	height: 120px;
+	background: #fff;
+	border-radius: 12px;
+	margin: 40px 0 24px 0;
+	box-shadow: 0 2px 8px rgba(53,122,255,0.08);
+}
+.recorder-actions {
+	margin-top: 32px;
+}
+</style> 
