@@ -87,7 +87,7 @@
 		</fui-drawer>
 
 		<!-- 主页面内容 -->
-		<view class="main-content">
+		<view class="main-content" @tap="onMainContentTap">
 			<!-- 顶部时间和日程提醒（占位） -->
 			<view class="top-bar">
 				<view class="top-left" @click="openDrawer">
@@ -106,7 +106,7 @@
 			</view>
 			<!-- 文档列表 -->
 			<scroll-view class="document-list" scroll-y>
-				<fui-swipeaction-group>
+				<fui-swipeaction-group ref="swipeGroup" :key="triggerSwipeCloseKey">
 					<view v-for="doc in filteredDocuments" :key="doc.id">
 						<fui-swipe-action
 							:buttons="[
@@ -148,7 +148,7 @@
 </template>
 
 <script setup lang="uts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, getCurrentInstance } from 'vue'
 
 // 文档类型
 type Document = {
@@ -167,6 +167,9 @@ let searchKeyword = ref<string>('')
 let filterType = ref<string>('all')
 let isRecording = ref<boolean>(false)
 let recorderManager: any = null
+let swipeGroup = ref<any>({})
+let triggerSwipeClose = ref<boolean>(false)
+const triggerSwipeCloseKey = computed<string>(() => triggerSwipeClose.value ? 'reset' : 'normal')
 
 // 示例数据
 let documents = ref<Document[]>([
@@ -289,6 +292,11 @@ function onSwipeAction(event: any, doc: Document): void {
 
 function onOpenDoc(doc: Document): void {
 	uni.navigateTo({ url: '/pages/doc/detail' })
+}
+
+function onMainContentTap(): void {
+	triggerSwipeClose.value = true
+	setTimeout(() => { triggerSwipeClose.value = false }, 10)
 }
 </script>
 

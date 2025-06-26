@@ -1,159 +1,322 @@
 <template>
-	<view class="recorder-container">
-		<canvas canvas-id="waveform" class="waveform-canvas"></canvas>
-		<view class="recorder-actions">
-			<button @click="onStop" :disabled="!isRecording">停止录音</button>
-		</view>
-	</view>
+  <view class="container">
+    <!-- 顶部栏 -->
+    <view class="header">
+      <text class="title">正在录音</text>
+    </view>
+    <!-- 时间与分组 -->
+    <view class="info-row">
+      <text class="datetime">{{ dateTime }}</text>
+      <view class="group-select">
+        <text class="group-text">{{ groupName }}</text>
+        <image src="/static/images/common/icon_tabbar.png" class="dropdown-icon" />
+      </view>
+    </view>
+    <!-- 录音时长与时间 -->
+    <view class="sub-info-row">
+      <text class="sub-time">{{ time }}</text>
+      <text class="sub-date">{{ todayTime }}</text>
+    </view>
+    <!-- 波形区域 -->
+    <view class="waveform-area">
+      <canvas canvas-id="audioWave" id="audioWave" class="waveform-canvas"></canvas>
+    </view>
+    <!-- 底部操作栏 -->
+    <view class="footer">
+      <text class="footer-time">{{ time }}</text>
+      <image src="/static/images/component/empty/img_news_3x.png" class="footer-icon" />
+      <button class="footer-btn" @tap="toggleRecording">
+        <text v-if="recording">暂停</text>
+        <text v-else>开始</text>
+      </button>
+      <button class="footer-btn stop" @tap="stopRecording">
+        <view class="stop-inner"></view>
+      </button>
+    </view>
+  </view>
 </template>
 
-<script setup lang="uts">
-import { ref, onMounted, onUnmounted } from 'vue'
+<script lang="uts">
+import { onReady, getCurrentInstance } from 'vue'
 
-type RecorderManager = any // 如有官方类型可替换
+declare function uni_createCanvasContext(canvasId: string): any
 
-let isRecording = ref<boolean>(false)
-let recorderManager: RecorderManager|null = null
-let canvasContext: any = null
-let animationId: number|null = null
-let waveformData: number[] = []
-let startTime: number = 0
-let fileTitle: string = ''
+export default {
+  data() {
+    return {
+      dateTime: '',
+      todayTime: '',
+      time: '00:00',
+      recording: false,
+      groupName: '未分组',
+      timer: null as number | null,
+      waveTimer: null as number | null,
+      waveData: [] as Array<number>,
+      recorderManager: null as RecorderManager | null,
+      canvasContext: null as any,
+      renderingContext: null as CanvasRenderingContext2D | null,
+      canvas: null as any,
+      canvasWidth: 0,
+      canvasHeight: 0,
+      testToBlobResult: false,
+      testToDataURLResult: false,
+      testCanvasContext: false
+    }
+  },
+  methods: {
+    genWaveData() {
+      this.waveData = []
+      for (let i = 0; i < 60; i++) {
+        this.waveData.push(Math.floor(Math.random() * 80) + 20)
+      }
+    },
+    drawWave() {
+      const ctx = this.renderingContext
+      if (ctx != null) {
+        ctx.clearRect(0, 0, this.canvasWidth, this.canvasHeight)
+        ctx.setFillStyle('#111')
+        const barWidth = 10
+        const gap = 3
+        for (let i = 0; i < this.waveData.length; i++) {
+          const x = 600 + i * (barWidth + gap)
+          const y = this.canvasHeight - this.waveData[i]
+          ctx.beginPath()
+          ctx.rect(x, y, barWidth, this.waveData[i])
+          ctx.fill()
+        }
+        ctx.draw()
+      }
+    },
+    toggleRecording() {
+      if (this.recording) {
+        this.stopRecording()
+      } else {
+        this.startRecording()
+      }
+    },
+    startRecording() {
+      const now = new Date()
+      this.dateTime = `${now.getFullYear()}年${(now.getMonth() + 1).toString().padStart(2, '0')}月${now.getDate().toString().padStart(2, '0')}日 下午${now.getHours()}_${now.getMinutes().toString().padStart(2, '0')}_${now.getSeconds().toString().padStart(2, '0')}`
+      this.todayTime = `今天 ${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`
+      this.time = '00:00'
+      this.recording = true
+      let seconds = 0
+      this.timer = setInterval(() => {
+        seconds++
+        const min = Math.floor(seconds / 60)
+        const sec = seconds % 60
+        this.time = `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`
+      }, 1000)
+      this.waveTimer = setInterval(() => {
+        this.genWaveData()
+        this.drawWave()
+      }, 100)
+      const mgr = this.recorderManager
+      if (mgr != null) {
+        mgr.start({
+          duration: 60000,
+          sampleRate: 16000,
+          numberOfChannels: 1,
+          encodeBitRate: 96000,
+          format: 'mp3'
+        })
+      }
+    },
+    stopRecording() {
+      this.recording = false
+      const t = this.timer
+      if (t != null) clearInterval(t)
+      this.timer = null
+      const w = this.waveTimer
+      if (w != null) clearInterval(w)
+      this.waveTimer = null
+      const mgr = this.recorderManager
+      if (mgr != null) {
+        mgr.stop()
+      }
+    },
+    onChildReady() {
+      // 预留事件处理
+    }
+  },
+  onLoad() {
+    this.genWaveData()
+    // 官方推荐canvas异步初始化
+    uni.createCanvasContextAsync({
+      id: 'audioWave',
+      component: this,
+      success: (context: any) => {
+        this.canvasContext = context;
+        this.renderingContext = context; // UTS下直接用context即可
+        // 不能直接获取canvas对象，宽高用属性传递
+        // 可选：如需高清屏适配，可在canvas标签上设置width/height为dpr倍数
+        // #ifdef WEB
+        if (context.toBlob) {
+          context.toBlob((blob: Blob) => {
+            this.testToBlobResult = (blob.size > 0 && blob.type == 'image/jpeg')
+          }, 'image/jpeg', 0.95)
+        }
+        // #endif
+        // #ifdef APP || WEB || MP
+        setTimeout(() => {
+          if (this.canvasContext && this.canvasContext.toDataURL) {
+            this.testToDataURLResult = this.canvasContext.toDataURL().startsWith('data:image/png;base64')
+          }
+        }, 50)
+        // #endif
+        this.testCanvasContext = true
+      }
+    })
+    this.recorderManager = uni.getRecorderManager()
+    const mgr = this.recorderManager
+    if (mgr != null) {
+      mgr.onStart((e: any) => {
+        console.log('录音开始')
+      })
+      mgr.onStop((res: any) => {
+        console.log('录音停止', res)
+      })
+    }
+    uni.$on('canvasChildReady', this.onChildReady)
+  },
+  onUnload() {
+    const t = this.timer
+    if (t != null) clearInterval(t)
+    this.timer = null
+    const w = this.waveTimer
+    if (w != null) clearInterval(w)
+    this.waveTimer = null
+  },
+  onReady() {
+    onReady(() => {
+      // 获取canvas元素
+      const canvas = uni.getElementById("audioWave") as UniCanvasElement
+      if (canvas != null) {
+        const context = canvas.getContext("2d")!
+        // 处理高清屏
+        const dpr = uni.getDeviceInfo().devicePixelRatio ?? 1
+        canvas.width = canvas.offsetWidth * dpr
+        canvas.height = canvas.offsetHeight * dpr
+        context.scale(dpr, dpr) // 仅需调用一次
 
-function getNowTimeStr(): string {
-	const now = new Date()
-	const y = now.getFullYear()
-	const m = (now.getMonth() + 1).toString().padStart(2, '0')
-	const d = now.getDate().toString().padStart(2, '0')
-	const h = now.getHours().toString().padStart(2, '0')
-	const min = now.getMinutes().toString().padStart(2, '0')
-	const s = now.getSeconds().toString().padStart(2, '0')
-	return `${y}-${m}-${d}_${h}-${min}-${s}`
-}
-
-onMounted(() => {
-	recorderManager = uni.getRecorderManager()
-	// 兼容 UTS 获取 canvas context
-	uni.createSelectorQuery()
-		.select('#waveform')
-		.context((res: any) => {
-			canvasContext = res.context
-			startDraw()
-		})
-		.exec()
-	startTime = Date.now()
-	fileTitle = `录音_${getNowTimeStr()}`
-	const manager = recorderManager
-	if (manager != null) {
-		manager.onStart(() => {
-			isRecording.value = true
-		})
-		manager.onStop((res: any) => {
-			isRecording.value = false
-			const now = new Date()
-			const recordInfo = {
-				title: fileTitle,
-				createdAt: now.toISOString().slice(0, 16).replace('T', ' '),
-				tag: '',
-				type: 'voice',
-				dateStr: `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日`,
-				timeStr: `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`,
-				filePath: res.tempFilePath,
-				id: 'rec_' + startTime
-			}
-			let files = uni.getStorageSync('recordFiles') as any[] | null
-			if (!files) files = []
-			files.unshift(recordInfo)
-			uni.setStorageSync('recordFiles', files)
-			uni.showToast({ title: '录音已保存', icon: 'none' })
-			cancelDraw()
-			setTimeout(() => {
-				uni.navigateBack()
-			}, 600)
-		})
-		// 实时音轨
-		// #ifdef APP || MP-WEIXIN
-		manager.onFrameRecorded((frame: any) => {
-			const data = new Uint8Array(frame.frameBuffer)
-			waveformData = []
-			for (let i = 0; i < data.length; i += 100) {
-				waveformData.push(data[i] / 255)
-			}
-		})
-		// #endif
-		// 开始录音
-		manager.start({
-			duration: 60000,
-			format: 'mp3',
-			frameSize: 1
-		})
-	}
-})
-
-onUnmounted(() => {
-	cancelDraw()
-	const manager = recorderManager
-	if (manager != null && isRecording.value) {
-		manager.stop()
-	}
-})
-
-function onStop() {
-	const manager = recorderManager
-	if (manager != null && isRecording.value) {
-		manager.stop()
-	}
-}
-
-function startDraw() {
-	function draw() {
-		if (!canvasContext) return
-		canvasContext.clearRect(0, 0, 600, 120)
-		canvasContext.setStrokeStyle('#357aff')
-		canvasContext.setLineWidth(2)
-		canvasContext.beginPath()
-		for (let i = 0; i < waveformData.length; i++) {
-			const x = (i / waveformData.length) * 600
-			const y = 60 - waveformData[i] * 50
-			if (i === 0) {
-				canvasContext.moveTo(x, y)
-			} else {
-				canvasContext.lineTo(x, y)
-			}
-		}
-		canvasContext.stroke()
-		canvasContext.draw()
-		animationId = requestAnimationFrame(draw)
-	}
-	draw()
-}
-
-function cancelDraw() {
-	if (animationId != null) {
-		cancelAnimationFrame(animationId)
-		animationId = null
-	}
+        // 你的绘制代码
+        // context.clearRect(0, 0, canvas.width, canvas.height)
+        // context.setFillStyle('#111')
+        // context.fillRect(...)
+        // context.draw()
+      }
+    })
+  }
 }
 </script>
 
-<style>
-.recorder-container {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	justify-content: center;
-	height: 100vh;
-	background: #fafafa;
+<style scoped>
+.container {
+  background: #fff;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+.header {
+  text-align: center;
+  font-size: 20px;
+  font-weight: bold;
+  padding: 16px 0 8px 0;
+}
+.title {
+  color: #222;
+}
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 24px;
+  font-size: 18px;
+  margin-bottom: 4px;
+}
+.datetime {
+  color: #333;
+}
+.group-select {
+  display: flex;
+  align-items: center;
+  background: #f5f5f5;
+  border-radius: 16px;
+  padding: 2px 12px;
+}
+.group-text {
+  color: #888;
+  font-size: 14px;
+}
+.dropdown-icon {
+  width: 16px;
+  height: 16px;
+  margin-left: 4px;
+}
+.sub-info-row {
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  color: #bbb;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+.sub-time {
+  margin-right: 12px;
+}
+.waveform-area {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 0 0 0 0;
+  min-height: 200px;
 }
 .waveform-canvas {
-	width: 600px;
-	height: 120px;
-	background: #fff;
-	border-radius: 12px;
-	margin: 40px 0 24px 0;
-	box-shadow: 0 2px 8px rgba(53,122,255,0.08);
+  width: 768px;
+  height: 200px;
+  background: #fff;
 }
-.recorder-actions {
-	margin-top: 32px;
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-top: 1px solid #f0f0f0;
+  background: #fafafa;
 }
-</style> 
+.footer-time {
+  font-size: 18px;
+  color: #222;
+}
+.footer-icon {
+  width: 24px;
+  height: 24px;
+  margin: 0 16px;
+}
+.footer-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #2979ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 8px;
+  border: none;
+}
+.footer-btn-icon {
+  width: 32px;
+  height: 32px;
+}
+.footer-btn.stop {
+  background: #fff;
+  border: 2px solid #2979ff;
+}
+.stop-inner {
+  width: 24px;
+  height: 24px;
+  background: #2979ff;
+  border-radius: 4px;
+}
+</style>
